@@ -82,7 +82,7 @@ fun DetailScreen(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /*isinya nnti*/ },
+                onClick = { /*isinya nnti yh ka*/ },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Learn More")
