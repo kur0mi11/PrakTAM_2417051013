@@ -5,6 +5,6 @@ import androidx.annotation.DrawableRes
 data class MbtiPage(
     val nama: String,
     val deskripsi: String,
-    val sifatUtama: String, // Menggantikan 'harga' agar sesuai konsep MBTI
+    val sifatUtama: String,
     @param:DrawableRes val imageRes: Int
 )
