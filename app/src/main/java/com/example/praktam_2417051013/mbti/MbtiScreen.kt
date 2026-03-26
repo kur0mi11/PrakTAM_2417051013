@@ -1,20 +1,27 @@
 package com.example.praktam_2417051013.mbti
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.praktam_2417051013.R
 import com.example.praktam_2417051013.data.MbtiDataSource
 import com.example.praktam_2417051013.data.MbtiPage
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
@@ -40,16 +49,75 @@ import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
 @Composable
 fun MbtiApp() {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .statusBarsPadding(),
+            contentPadding = PaddingValues(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            MbtiDataSource.mbtiList.forEach { mbti ->
+            item {
+                Text(
+                    text = stringResource(id = R.string.popular_recommendations),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(MbtiDataSource.mbtiList) { mbti ->
+                        MbtiRowItem(mbti = mbti)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(45.dp))
+
+                Text(
+                    text = stringResource(id = R.string.complete_list),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            items(MbtiDataSource.mbtiList) { mbti ->
                 DetailScreen(mbti = mbti)
-                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun MbtiRowItem(mbti: MbtiPage) {
+    Card(
+        modifier = Modifier.width(160.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            Image(
+                painter = painterResource(id = mbti.imageRes),
+                contentDescription = mbti.nama,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+                    .height(100.dp),
+                contentScale = ContentScale.Fit
+            )
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = mbti.nama,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = mbti.sifatUtama,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
@@ -77,7 +145,7 @@ fun DetailScreen(mbti: MbtiPage) {
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Favorite",
+                        contentDescription = stringResource(id = R.string.favorite),
                         tint = if (isFavorite) Color.Red else Color.White
                     )
                 }
@@ -101,7 +169,7 @@ fun DetailScreen(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Main Characteristics: ${mbti.sifatUtama}",
+                text = stringResource(id = R.string.main_characteristics, mbti.sifatUtama),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
@@ -109,10 +177,10 @@ fun DetailScreen(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /*isinya nnti yah kak*/ },
+                onClick = { /**/ },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Learn More")
+                Text(text = stringResource(id = R.string.learn_more))
             }
         }
     }
