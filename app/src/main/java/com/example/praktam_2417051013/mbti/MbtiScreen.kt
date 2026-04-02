@@ -45,6 +45,11 @@ import com.example.praktam_2417051013.R
 import com.example.praktam_2417051013.data.MbtiDataSource
 import com.example.praktam_2417051013.data.MbtiPage
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.lightColorScheme
+
+
 
 @Composable
 fun MbtiApp() {
@@ -62,7 +67,8 @@ fun MbtiApp() {
                     text = stringResource(id = R.string.popular_recommendations),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 LazyRow(
@@ -79,7 +85,8 @@ fun MbtiApp() {
                     text = stringResource(id = R.string.complete_list),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -95,7 +102,10 @@ fun MbtiRowItem(mbti: MbtiPage) {
     Card(
         modifier = Modifier.width(160.dp),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column {
             Image(
@@ -111,12 +121,13 @@ fun MbtiRowItem(mbti: MbtiPage) {
                 Text(
                     text = mbti.nama,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = mbti.sifatUtama,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -156,14 +167,16 @@ fun DetailScreen(mbti: MbtiPage) {
             Text(
                 text = mbti.nama,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = mbti.deskripsi,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -171,7 +184,8 @@ fun DetailScreen(mbti: MbtiPage) {
             Text(
                 text = stringResource(id = R.string.main_characteristics, mbti.sifatUtama),
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(16.dp))
