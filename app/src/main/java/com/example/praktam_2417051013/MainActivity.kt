@@ -4,7 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.praktam_2417051013.mbti.MbtiApp
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.praktam_2417051013.data.MbtiDataSource
+import com.example.praktam_2417051013.mbti.MbtiMainApp
+import com.example.praktam_2417051013.mbti.PersonalityDetailScreen
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +20,31 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PrakTAM_2417051013Theme {
-                MbtiApp()
+                val navController = rememberNavController()
+                AppNavigation(navController = navController)
+            }
+        }
+    }
+}
+
+@Composable
+fun AppNavigation(navController: NavHostController) {
+    NavHost(
+        navController = navController,
+        startDestination = "home"
+    ) {
+        composable("home") {
+            MbtiMainApp(navController = navController)
+        }
+        composable("detail/{nama}") { backStackEntry ->
+            val nama = backStackEntry.arguments?.getString("nama")
+            val mbti = MbtiDataSource.mbtiList.find { it.nama == nama }
+
+            if (mbti != null) {
+                PersonalityDetailScreen(
+                    mbti = mbti,
+                    navController = navController
+                )
             }
         }
     }
