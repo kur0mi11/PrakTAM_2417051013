@@ -1,6 +1,5 @@
 package com.example.praktam_2417051013.mbti
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +32,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,67 +40,119 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.praktam_2417051013.R
-import com.example.praktam_2417051013.data.MbtiDataSource
 import com.example.praktam_2417051013.data.MbtiPage
+import com.example.praktam_2417051013.network.RetrofitClient
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MbtiMainApp(navController: NavHostController) {
+fun MbtiMainApp(navController: NavHostController, onMbtiLoaded: (List<MbtiPage>) -> Unit = {}) {
+    var mbtiList by remember { mutableStateOf<List<MbtiPage>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val fetchedMbti = RetrofitClient.instance.getMbti()
+            mbtiList = fetchedMbti
+            onMbtiLoaded(fetchedMbti)
+            isLoading = false
+            isError = false
+        } catch (e: Exception) {
+            isLoading = false
+            isError = true
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .statusBarsPadding(),
-            contentPadding = PaddingValues(24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            item {
-                Text(
-                    text = stringResource(id = R.string.popular_recommendations),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (isError || mbtiList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    items(MbtiDataSource.mbtiList) { mbti ->
-                        MbtiRowItem(mbti = mbti, navController = navController)
+                    Text(
+                        text = "Gagal Memuat Data",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Pastikan koneksi internet Anda menyala",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding(),
+                contentPadding = PaddingValues(24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                item {
+                    Text(
+                        text = stringResource(id = R.string.popular_recommendations),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(mbtiList) { mbti ->
+                            MbtiRowItem(mbti = mbti, navController = navController)
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(45.dp))
+
+                    Text(
+                        text = stringResource(id = R.string.complete_list),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(45.dp))
-
-                Text(
-                    text = stringResource(id = R.string.complete_list),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-
-            items(MbtiDataSource.mbtiList) { mbti ->
-                Box(modifier = Modifier.clickable {
-                    navController.navigate("detail/${mbti.nama}")
-                }) {
-                    DetailCard(mbti = mbti)
+                items(mbtiList) { mbti ->
+                    Box(modifier = Modifier.clickable {
+                        navController.navigate("detail/${mbti.nama ?: "Unknown"}")
+                    }) {
+                        DetailCard(mbti = mbti)
+                    }
                 }
             }
         }
@@ -113,7 +165,7 @@ fun MbtiRowItem(mbti: MbtiPage, navController: NavHostController) {
         modifier = Modifier
             .width(160.dp)
             .clickable {
-                navController.navigate("detail/${mbti.nama}")
+                navController.navigate("detail/${mbti.nama ?: "Unknown"}")
             },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -122,23 +174,25 @@ fun MbtiRowItem(mbti: MbtiPage, navController: NavHostController) {
         )
     ) {
         Column {
-            Image(
-                painter = painterResource(id = mbti.imageRes),
-                contentDescription = mbti.nama,
+            AsyncImage(
+                model = mbti.imageUrl,
+                contentDescription = mbti.nama ?: "MBTI Image",
+                placeholder = painterResource(id = R.drawable.intp),
+                error = painterResource(id = R.drawable.intp),
                 modifier = Modifier
-                    .padding(top = 8.dp)
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(120.dp)
+                    .padding(8.dp),
                 contentScale = ContentScale.Fit
             )
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
-                    text = mbti.nama,
+                    text = mbti.nama ?: "Unknown",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = mbti.sifatUtama,
+                    text = mbti.sifatUtama ?: "No Data",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -159,13 +213,15 @@ fun DetailCard(mbti: MbtiPage) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                Image(
-                    painter = painterResource(id = mbti.imageRes),
-                    contentDescription = mbti.nama,
+                AsyncImage(
+                    model = mbti.imageUrl,
+                    contentDescription = mbti.nama ?: "MBTI Image",
+                    placeholder = painterResource(id = R.drawable.intp),
+                    error = painterResource(id = R.drawable.intp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit // Menggunakan Fit agar gambar utuh
                 )
 
                 IconButton(
@@ -183,7 +239,7 @@ fun DetailCard(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = mbti.nama,
+                text = mbti.nama ?: "Unknown",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
@@ -192,7 +248,7 @@ fun DetailCard(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = mbti.deskripsi,
+                text = mbti.deskripsi ?: "No description available.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -200,7 +256,7 @@ fun DetailCard(mbti: MbtiPage) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = stringResource(id = R.string.main_characteristics, mbti.sifatUtama),
+                text = stringResource(id = R.string.main_characteristics, mbti.sifatUtama ?: "-"),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -232,7 +288,7 @@ fun PersonalityDetailScreen(
                             isLoading = true
                             delay(2000)
                             snackbarHostState.showSnackbar(
-                                "Analysis for ${mbti.nama} explored successfully!"
+                                "Analysis for ${mbti.nama ?: "this personality"} explored successfully!"
                             )
                             isLoading = false
                         }

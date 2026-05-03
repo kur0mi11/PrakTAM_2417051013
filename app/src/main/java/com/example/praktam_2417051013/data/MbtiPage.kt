@@ -1,10 +1,17 @@
 package com.example.praktam_2417051013.data
 
-import androidx.annotation.DrawableRes
+import com.google.gson.annotations.SerializedName
 
 data class MbtiPage(
-    val nama: String,
-    val deskripsi: String,
-    val sifatUtama: String,
-    @param:DrawableRes val imageRes: Int
+    @SerializedName("nama")
+    val nama: String? = null,
+
+    @SerializedName("deskripsi")
+    val deskripsi: String? = null,
+
+    @SerializedName("sifatUtama")
+    val sifatUtama: String? = null,
+
+    @SerializedName("image_name")
+    val imageUrl: String? = null
 )
