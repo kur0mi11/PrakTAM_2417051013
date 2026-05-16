@@ -13,7 +13,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.praktam_2417051013.data.MbtiPage
+import com.example.praktam_2417051013.data.model.MbtiPage
 import com.example.praktam_2417051013.mbti.MbtiMainApp
 import com.example.praktam_2417051013.mbti.PersonalityDetailScreen
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
@@ -34,15 +34,28 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation(navController: NavHostController) {
     var mbtiList by remember { mutableStateOf<List<MbtiPage>>(emptyList()) }
-    
+
+    val toggleFavorite: (MbtiPage) -> Unit = { targetedMbti ->
+        mbtiList = mbtiList.map { mbti ->
+            if (mbti.nama == targetedMbti.nama) {
+                mbti.copy(isFavorite = !mbti.isFavorite)
+            } else {
+                mbti
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
         composable("home") {
-            MbtiMainApp(navController = navController) { fetchedMbti ->
-                mbtiList = fetchedMbti
-            }
+            MbtiMainApp(
+                navController = navController,
+                mbtiList = mbtiList,
+                onMbtiLoaded = { fetchedMbti -> mbtiList = fetchedMbti },
+                onFavoriteToggle = toggleFavorite
+            )
         }
         composable("detail/{nama}") { backStackEntry ->
             val nama = backStackEntry.arguments?.getString("nama")
@@ -51,7 +64,8 @@ fun AppNavigation(navController: NavHostController) {
             if (mbti != null) {
                 PersonalityDetailScreen(
                     mbti = mbti,
-                    navController = navController
+                    navController = navController,
+                    onFavoriteToggle = { toggleFavorite(mbti) }
                 )
             }
         }

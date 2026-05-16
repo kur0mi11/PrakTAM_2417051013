@@ -1,4 +1,4 @@
-package com.example.praktam_2417051013.data
+package com.example.praktam_2417051013.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -13,5 +13,7 @@ data class MbtiPage(
     val sifatUtama: String? = null,
 
     @SerializedName("image_name")
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+
+    var isFavorite: Boolean = false
 )

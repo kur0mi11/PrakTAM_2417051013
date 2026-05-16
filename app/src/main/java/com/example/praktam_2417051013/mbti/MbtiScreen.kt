@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,13 +35,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -53,28 +54,43 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.praktam_2417051013.R
-import com.example.praktam_2417051013.data.MbtiPage
-import com.example.praktam_2417051013.network.RetrofitClient
+import com.example.praktam_2417051013.data.model.MbtiPage
+import com.example.praktam_2417051013.data.repository.MbtiRepository
 import com.example.praktam_2417051013.ui.theme.PrakTAM_2417051013Theme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun MbtiMainApp(navController: NavHostController, onMbtiLoaded: (List<MbtiPage>) -> Unit = {}) {
-    var mbtiList by remember { mutableStateOf<List<MbtiPage>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+fun MbtiMainApp(
+    navController: NavHostController,
+    mbtiList: List<MbtiPage>,
+    onMbtiLoaded: (List<MbtiPage>) -> Unit,
+    onFavoriteToggle: (MbtiPage) -> Unit
+) {
+    var isLoading by remember { mutableStateOf(mbtiList.isEmpty()) }
     var isError by remember { mutableStateOf(false) }
+    var retryTrigger by remember { mutableIntStateOf(0) }
+    val repository = remember { MbtiRepository() }
 
-    LaunchedEffect(Unit) {
-        try {
-            val fetchedMbti = RetrofitClient.instance.getMbti()
-            mbtiList = fetchedMbti
-            onMbtiLoaded(fetchedMbti)
-            isLoading = false
+    LaunchedEffect(retryTrigger) {
+        if (mbtiList.isEmpty()) {
+            isLoading = true
             isError = false
-        } catch (e: Exception) {
+            try {
+                val result = repository.getMbti()
+                if (result.isNotEmpty()) {
+                    onMbtiLoaded(result)
+                    isError = false
+                } else {
+                    isError = true
+                }
+            } catch (e: Exception) {
+                isError = true
+            } finally {
+                isLoading = false
+            }
+        } else {
             isLoading = false
-            isError = true
         }
     }
 
@@ -86,7 +102,7 @@ fun MbtiMainApp(navController: NavHostController, onMbtiLoaded: (List<MbtiPage>)
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (isError || mbtiList.isEmpty()) {
+        } else if (isError) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -104,12 +120,16 @@ fun MbtiMainApp(navController: NavHostController, onMbtiLoaded: (List<MbtiPage>)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Pastikan koneksi internet Anda menyala",
+                        text = "Pastikan koneksi internet Anda aktif dan coba lagi.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(onClick = { retryTrigger++ }) {
+                        Text("Coba Lagi")
+                    }
                 }
             }
         } else {
@@ -148,11 +168,14 @@ fun MbtiMainApp(navController: NavHostController, onMbtiLoaded: (List<MbtiPage>)
                 }
 
                 items(mbtiList) { mbti ->
-                    Box(modifier = Modifier.clickable {
-                        navController.navigate("detail/${mbti.nama ?: "Unknown"}")
-                    }) {
-                        DetailCard(mbti = mbti)
-                    }
+                    DetailCard(
+                        mbti = mbti,
+                        isFavorite = mbti.isFavorite,
+                        onFavoriteToggle = { onFavoriteToggle(mbti) },
+                        onButtonClick = {
+                            navController.navigate("detail/${mbti.nama ?: "Unknown"}")
+                        }
+                    )
                 }
             }
         }
@@ -202,11 +225,17 @@ fun MbtiRowItem(mbti: MbtiPage, navController: NavHostController) {
 }
 
 @Composable
-fun DetailCard(mbti: MbtiPage) {
-    var isFavorite by remember { mutableStateOf(false) }
-
+fun DetailCard(
+    mbti: MbtiPage,
+    isFavorite: Boolean,
+    onFavoriteToggle: () -> Unit,
+    onButtonClick: () -> Unit,
+    showButton: Boolean = true
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -221,11 +250,11 @@ fun DetailCard(mbti: MbtiPage) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
-                    contentScale = ContentScale.Fit // Menggunakan Fit agar gambar utuh
+                    contentScale = ContentScale.Fit
                 )
 
                 IconButton(
-                    onClick = { isFavorite = !isFavorite },
+                    onClick = onFavoriteToggle,
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
@@ -250,17 +279,24 @@ fun DetailCard(mbti: MbtiPage) {
             Text(
                 text = mbti.deskripsi ?: "No description available.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (showButton) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = stringResource(id = R.string.main_characteristics, mbti.sifatUtama ?: "-"),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+                Button(
+                    onClick = onButtonClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(text = "Get to Know More", color = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
         }
     }
 }
@@ -268,7 +304,8 @@ fun DetailCard(mbti: MbtiPage) {
 @Composable
 fun PersonalityDetailScreen(
     mbti: MbtiPage,
-    navController: NavHostController
+    navController: NavHostController,
+    onFavoriteToggle: () -> Unit
 ) {
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -279,7 +316,14 @@ fun PersonalityDetailScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(modifier = Modifier.padding(16.dp)) {
-                DetailCard(mbti = mbti)
+                DetailCard(
+                    mbti = mbti,
+                    isFavorite = mbti.isFavorite,
+                    onFavoriteToggle = onFavoriteToggle,
+                    onButtonClick = {},
+                    showButton = false
+                )
+                
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
@@ -320,14 +364,5 @@ fun PersonalityDetailScreen(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MbtiAppPreview() {
-    PrakTAM_2417051013Theme {
-        val navController = rememberNavController()
-        MbtiMainApp(navController = navController)
     }
 }
